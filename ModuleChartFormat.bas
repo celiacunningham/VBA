@@ -4,70 +4,84 @@ Attribute formatChart.VB_ProcData.VB_Invoke_Func = " \n14"
 '
 ' formatChart Macro
 '
-
+' Takes the active charts and reformats it as specified
 '
+    'change these options as needed
+    Dim fontSize As Variant: fontSize = 14 'font size
+    Dim visibleLine As Boolean: visibleLine = False 'line connecting points
+    Dim markerStyle As Integer: markerStyle = xlMarkerStyleCircle 'style of markers, can also be xlMarkerStyleNone
+    Dim markerFill As Boolean: markerFill = True
+    Dim markerSize As Integer: markerSize = 7 'how large the markers are
+    Dim chartType As Integer: chartType = xlXYScatter 'which type of chart, can also be xlXYScatterLines or xlXYScatterLinesNoMarkers
+
+    Dim redcolor, pinkcolor, purplecolor, indigocolor, bluecolor, greencolor, orangecolor, colori As Long
+    redcolor = RGB(244, 67, 54)
+    pinkcolor = RGB(233, 30, 99)
+    purplecolor = RGB(156, 39, 176)
+    indigocolor = RGB(63, 81, 181)
+    bluecolor = RGB(33, 150, 243)
+    greencolor = RGB(76, 175, 80)
+    orangecolor = RGB(255, 152, 0)
+    
+    Dim colorSet, nColors As Variant
     Dim ch As Chart
     Dim n As Integer
-    Set ch = Chart3
+    Dim invert As Boolean
+    Dim S As Series
+    Dim P As Point
+    
+    colorSet = Array(bluecolor, redcolor, greencolor, purplecolor, orangecolor, pinkcolor, indigocolor) 'first series is red, then blue, etc.
+    nColors = UBound(colorSet, 1) - LBound(colorSet, 1) + 1
+    
+    Set ch = ActiveChart
     n = ch.SeriesCollection.Count
     
-    'set color 1 and color 2, with series fading between the two
-    r1 = 255
-    g1 = 0
-    b1 = 0 'color 1 is red
-    r2 = 0
-    g2 = 0
-    b2 = 255 'color 2 is blue
-    
-    hasLine = msoTrue 'msoFalse
+    ch.ChartArea.Format.TextFrame2.TextRange.Font.Size = fontSize
     
     For i = 1 To n
         'Set the color scheme
-        Dim colori As Long
-        ri = CInt(((i - 1) / (n - 1)) * (r2 - r1) + r1)
-        gi = CInt(((i - 1) / (n - 1)) * (g2 - g1) + g1)
-        bi = CInt(((i - 1) / (n - 1)) * (b2 - b1) + b1)
-        colori = RGB(ri, gi, bi)
+        colori = colorSet((i - 1) Mod (nColors))
         
-        Dim S As Series
-        Dim P As Point
+        'determine if cycling back on the first color, if so invert
+        If Int((i - 1) / nColors) > 0 Then
+            invert = True
+        End If
+            
         Set S = ch.SeriesCollection(i)
-        S.ClearFormats
+        With S
+            .ClearFormats
+            .Type = chartType
+            
+            'Set connecting line properties
+            .Format.Line.Visible = visibleLine
+            If visibleLine Then
+                With .Border
+                    .Color = colori
+                    .Weight = xlHairline
+                    '.LineStyle = xlDash
+                End With
+            End If
+            
+            'Set marker properties
+            If ((Not invert) = markerFill) Then
+                .MarkerBackgroundColor = colori
+                .MarkerForegroundColorIndex = xlColorIndexNone
+            Else
+                .MarkerBackgroundColorIndex = xlColorIndexNone
+                .MarkerForegroundColor = colori
+            End If
+            .markerSize = markerSize
+            .markerStyle = markerStyle
         
-        'Set the type
-        'S.ChartType = xlXYScatter 'xlXYScatterLines 'xlXYScatterLinesNoMarkers
-        'S.Type = xlXYScatter
-        
-        'Set the line style
-        With S.Format.Line
-            .Visible = hasLine
-            .Weight = xlHairline
-            .Style = msoLineSingle
-            .DashStyle = msoLineSingle
-            .ForeColor.RGB = colori
+            'Set the marker line style point by point
+            'For Each P In S.Points
+            '    With P
+            '        .MarkerStyle = xlMarkerStyleCircle
+            '        .Format.Line.DashStyle = msoLineSolid
+            '        .Format.Line.Weight = xlThin
+            '        .Format.Line.ForeColor.RGB = RGB(0, 0, 0)
+            '    End With
+            'Next P
         End With
-        
-        'Set marker fill
-        S.MarkerBackgroundColorIndex = xlColorIndexNone
-        '.MarkerBackgroundColor = colori
-        
-        'Set marker line color
-        '.MarkerForegroundColorIndex = xlColorIndexNone
-        S.MarkerForegroundColor = colori
-        
-        'Set marker size and style
-        S.MarkerSize = 7
-        S.MarkerStyle = xlMarkerStyleCircle 'xlMarkerStyleNone
-        
-        'Set the marker line style
-        For Each P In S.Points
-            With P
-        '        .MarkerStyle = xlMarkerStyleCircle
-        '        .Format.Line.DashStyle = msoLineSolid
-        '        .Format.Line.Weight = xlThin
-        '        .Format.Line.ForeColor.RGB = RGB(0, 0, 0)
-            End With
-        Next P
-        
     Next i
 End Sub
